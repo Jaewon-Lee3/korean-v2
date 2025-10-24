@@ -16,7 +16,6 @@ export function convertToCSV(questions: ParsedQuestion[]): string {
   }));
 
   return Papa.unparse(csvRows, {
-    encoding: 'utf-8',
     header: true,
   });
 }
