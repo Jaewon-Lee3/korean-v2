@@ -1,13 +1,35 @@
 import Papa from 'papaparse';
 import { ParsedQuestion, CSVRow } from '@/types/question';
 
+// 원문자(①②③④⑤)를 일반 숫자(1,2,3,4,5)로 변환
+function convertCircledNumberToPlain(text: string): string {
+  const circledNumbers: { [key: string]: string } = {
+    '①': '1',
+    '②': '2',
+    '③': '3',
+    '④': '4',
+    '⑤': '5',
+    '⑥': '6',
+    '⑦': '7',
+    '⑧': '8',
+    '⑨': '9',
+  };
+
+  let result = text;
+  for (const [circled, plain] of Object.entries(circledNumbers)) {
+    result = result.replace(new RegExp(circled, 'g'), plain);
+  }
+
+  return result;
+}
+
 export function convertToCSV(questions: ParsedQuestion[]): string {
   const csvRows: CSVRow[] = questions.map((q) => ({
     제목: q.index.toString(),
     질문: q.발문,
     '문제 내용': q.지문,
     해설: q.해설,
-    '정답 객관식 번호': q.정답번호,
+    '정답 객관식 번호': convertCircledNumberToPlain(q.정답번호),
     '객관식 선택지1': q.선지목록['1'] || '',
     '객관식 선택지2': q.선지목록['2'] || '',
     '객관식 선택지3': q.선지목록['3'] || '',
