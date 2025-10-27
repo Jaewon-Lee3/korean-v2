@@ -34,7 +34,7 @@ export async function callOpenRouter(
   }
 
   const requestBody: OpenRouterRequest = {
-    model: 'google/gemini-2.0-flash-exp:free',
+    model: 'google/gemini-2.5-pro',
     temperature: 0.8,
     messages: [
       {
