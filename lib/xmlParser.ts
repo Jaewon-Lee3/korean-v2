@@ -50,8 +50,12 @@ export function parseXMLQuestion(xmlString: string): QuestionData {
     }
     const 정답번호 = 정답번호Match[1].trim();
 
-    // 해설 추출
-    const 해설Match = xmlString.match(/<해설><!\[CDATA\[(.*?)\]\]><\/해설>/s);
+    // 해설 추출 (CDATA 있거나 없거나 모두 처리)
+    let 해설Match = xmlString.match(/<해설><!\[CDATA\[(.*?)\]\]><\/해설>/s);
+    if (!해설Match) {
+      // CDATA 없는 경우 시도
+      해설Match = xmlString.match(/<해설>(.*?)<\/해설>/s);
+    }
     if (!해설Match) {
       throw new XMLParseError('해설을 찾을 수 없습니다.');
     }
