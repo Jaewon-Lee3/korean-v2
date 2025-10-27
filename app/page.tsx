@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import TextInput from '@/components/TextInput';
 import QuestionTypeManager from '@/components/QuestionTypeManager';
 import PromptEditor from '@/components/PromptEditor';
+import PromptVariables from '@/components/PromptVariables';
 import QuestionPreview from '@/components/QuestionPreview';
 import DownloadButton from '@/components/DownloadButton';
 import { QuestionTypeData, ParsedQuestion } from '@/types/question';
 import { parseXMLQuestion, XMLParseError } from '@/lib/xmlParser';
+import { extractVariables, replaceVariables, validateVariables } from '@/lib/promptVariables';
 
 const STORAGE_KEY = 'question_types';
 
@@ -15,6 +17,7 @@ export default function Home() {
   const [text, setText] = useState('');
   const [questionTypes, setQuestionTypes] = useState<QuestionTypeData[]>([]);
   const [selectedTypeName, setSelectedTypeName] = useState('');
+  const [variableValues, setVariableValues] = useState<Record<string, string>>({});
   const [isGenerating, setIsGenerating] = useState(false);
   const [questions, setQuestions] = useState<ParsedQuestion[]>([]);
   const [rawXML, setRawXML] = useState<string>('');
@@ -85,6 +88,15 @@ export default function Home() {
     );
   };
 
+  // 현재 프롬프트에서 변수 추출
+  const currentPrompt = getCurrentType()?.prompt || '';
+  const promptVariables = useMemo(() => extractVariables(currentPrompt), [currentPrompt]);
+
+  // 유형이 변경되면 변수 값 초기화
+  useEffect(() => {
+    setVariableValues({});
+  }, [selectedTypeName]);
+
   const handleGenerate = async () => {
     if (!text.trim()) {
       alert('지문을 입력해주세요.');
@@ -96,6 +108,16 @@ export default function Home() {
       alert('프롬프트를 입력해주세요.');
       return;
     }
+
+    // 변수 검증
+    const validation = validateVariables(promptVariables, variableValues);
+    if (!validation.isValid) {
+      alert(`다음 변수의 값을 입력해주세요: ${validation.missing.join(', ')}`);
+      return;
+    }
+
+    // 변수 치환
+    const finalPrompt = replaceVariables(currentType.prompt, variableValues);
 
     setIsGenerating(true);
     setError('');
@@ -109,7 +131,7 @@ export default function Home() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          prompt: currentType.prompt,
+          prompt: finalPrompt,
           text,
         }),
       });
@@ -144,8 +166,6 @@ export default function Home() {
       setIsGenerating(false);
     }
   };
-
-  const currentPrompt = getCurrentType()?.prompt || '';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -184,6 +204,11 @@ export default function Home() {
             <PromptEditor
               value={currentPrompt}
               onChange={handlePromptChange}
+            />
+            <PromptVariables
+              variables={promptVariables}
+              values={variableValues}
+              onChange={setVariableValues}
             />
           </div>
         </div>
